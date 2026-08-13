@@ -1,0 +1,25 @@
+un sistema de procesamiento de pedidos de un e-commerce simplificado
+Proyecto integrador: Sistema de procesamiento de pedidos
+Escenario
+Un e-commerce recibe pedidos que llegan de forma irregular. Cada pedido necesita:
+
+Validarse contra el inventario (stock disponible por producto).
+Si hay stock, descontarlo y procesar el pago (simulado, con posibilidad de fallo aleatorio).
+Los pedidos exitosos se registran en un historial; los rechazados (por falta de stock o pago fallido) se cuentan aparte.
+El sistema debe soportar una cantidad limitada de "procesadores de pago" simultáneos (simula un servicio externo con límite de concurrencia).
+Al final, se genera un reporte resumen — pero solo cuando todos los pedidos hayan sido procesados.
+Herramientas que vas a integrar
+Pieza	Herramienta
+Cola de pedidos entrantes	BlockingQueue
+Inventario compartido	ConcurrentHashMap + operación atómica (merge/compute)
+Límite de "procesadores de pago"	Semaphore
+Contadores de éxitos/fallos	AtomicInteger
+Consumidores del pool	ExecutorService con Virtual Threads
+Esperar a que todo termine	CountDownLatch o CompletableFuture.allOf
+Generar el reporte final sin bloquear	CompletableFuture.thenRun()
+Estructura sugerida (tú decides los detalles)
+Clase Inventario — envuelve un ConcurrentHashMap<String, Integer>, con un método intentarDescontar(producto, cantidad) que sea atómico (piensa en qué herramienta de ConcurrentHashMap ya usaste en el Ejercicio 4, y cómo adaptarla para que además pueda fallar si no hay stock suficiente — merge simple no te alcanza aquí, vas a necesitar algo un poco distinto).
+Clase Pedido — con producto, cantidad, y algún identificador.
+Un productor que genera, digamos, 20 pedidos aleatorios y los coloca en una BlockingQueue<Pedido>.
+Varios consumidores (Virtual Threads) que toman pedidos de la cola, cada uno: valida contra inventario, si hay stock adquiere un permiso del Semaphore (simulando el procesador de pago), simula el pago (con posibilidad de fallo), y cuenta el resultado.
+Al final: reporte con pedidos exitosos, rechazados por falta de stock, y rechazados por fallo de pago.
